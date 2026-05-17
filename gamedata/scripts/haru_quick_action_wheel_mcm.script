@@ -16,10 +16,18 @@ override_quick_keys = {
     [62] = 5
 }
 
+function tablelength(T)
+	local count = 0
+	if T then
+		for i,item in ipairs(T) do count = count + 1 end
+	end
+	return count
+end
+
 add_to_qaw_functor = {
     "add_to_qaw", 
     function(obj, bag, mode) -- cond
-        return (not TAB_MANAGER.dynamic_tabs[TAB_MANAGER.current_tab]) and TAB_MANAGER:CanAddItem(obj, obj:section())
+        return (not TAB_MANAGER.dynamic_tabs[TAB_MANAGER.current_tab] and TAB_MANAGER:CanAddItem(obj, obj:section()) and tablelength(TAB_MANAGER.tabs[TAB_MANAGER.current_tab]) <= MCM_SETTINGS.tab_slot)
     end, 
     function(obj, bag, mode) -- name
         return "ui_haru_add_item_to_qaw"
@@ -72,7 +80,7 @@ function get_empty_tab()
 end
 
 -- taken from ui_inventory
-local K_Timer = false
+local K_Timer   = false
 function keybind_pass()
 	if (K_Timer and (time_global() > K_Timer + 200)) or (not K_Timer) then
 		K_Timer = time_global()
@@ -408,6 +416,8 @@ function TabManager:CanAddItem(obj, sec)
     if self.cache[sec] then
         return self.cache[sec]
     end
+	
+	if IsWeapon(obj) then return end
 
     for name, class in pairs(self.classes) do
         if class.CanAddToTab(obj, sec) then
@@ -1232,7 +1242,7 @@ function QMagazineWheelOption:OnClick()
     end
 
     GUI:Close()
-  
+    
     self:LoadInActiveWeapon(obj)
 end
 
@@ -1508,7 +1518,6 @@ function QEquipWheelOption.CanAddToTab(obj, sec)
     return slot and slot ~= 4
 end
 
-
 function patch_GUI(GUI)
     GUI.stay_open = false
     GUI.tab_category = InitEx(GUI.xml, "Static", "tab_category", GUI.bg)
@@ -1699,12 +1708,13 @@ local options = {id = script_name(), gr = {
         },
         { id = "hold", type = "check", val = 1, def = true },
         { id = "divider", type = "line" },
-        { id = "override_ammo_wheel", type = "check", val = 1, def = true},
+        { id = "override_ammo_wheel", type = "check", val = 1, def = false},
     }},
 
     {id = "tabs", text="ui_mcm_qaw_tabs", sh = true, gr = {
         { id = "title", type= "slide", link= "ui_qaw_mcm_banner", text= "", spacing = 20 },
-        { id = "tab_count", type = "input", val = 2, min = 1, max = 9, def = get_max_key(tab_categories) },
+        { id = "tab_count", type = "track", val = 2, min = 1, max = 9, step = 1, def = 1 },
+		{ id = "tab_slot", type = "track", val = 2, min = 1, max = 20, step = 1, def = 10 },
     }},
 
     {id ="misc", text="ui_mcm_qaw_misc", sh = true, gr = {
